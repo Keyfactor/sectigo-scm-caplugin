@@ -7,10 +7,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		CHANGELOG.md = CHANGELOG.md
 		integration-manifest.json = integration-manifest.json
-		readme_source.md = readme_source.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sectigo-scm-caplugin", "sectigo-scm-caplugin\sectigo-scm-caplugin.csproj", "{93A1787A-EACB-4B21-9703-706605B076A7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docsource", "docsource", "{C6A04EEA-5551-4D85-854A-AD817FD267D8}"
+	ProjectSection(SolutionItems) = preProject
+		configuration.md = configuration.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
