@@ -276,13 +276,13 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					DefaultValue = "",
 					Type = "String"
 				},
-				[Constants.Config.CLIENT_CERTIFICATE] = new PropertyConfigInfo()
-				{
-					Comments = "If AuthType is set to Certificate, this is the certificate the Gateway will use to authenticate to the API.",
-					Hidden = false,
-					DefaultValue = null,
-					Type = "ClientCertificate"
-				},
+				//[Constants.Config.CLIENT_CERTIFICATE] = new PropertyConfigInfo()
+				//{
+				//	Comments = "If AuthType is set to Certificate, this is the certificate the Gateway will use to authenticate to the API.",
+				//	Hidden = false,
+				//	DefaultValue = null,
+				//	Type = "ClientCertificate"
+				//},
 				[Constants.Config.PICKUP_RETRIES] = new PropertyConfigInfo()
 				{
 					Comments = "This setting determines the number of times the service will attempt to download a certificate after successful enrollment. If the certificate cannot be downloaded during this period it will be picked up during the next sync.",
