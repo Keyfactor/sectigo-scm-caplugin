@@ -15,6 +15,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
@@ -309,18 +310,18 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 		
 			HttpClientHandler clientHandler = new HttpClientHandler();
 
-			//if (config.AuthenticationType.ToLower() == "certificate")
-			//{
-			//	clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-			//	X509Certificate2 authCert = GetClientCertificate(config);
-			//	if (authCert == null)
-			//	{
-			//		Logger.MethodExit(LogLevel.Debug);
-			//		throw new Exception("AuthType set to Certificate, but no certificate found!");
-			//	}
+			if (config.AuthenticationType.ToLower() == "certificate")
+			{
+				clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+				X509Certificate2 authCert = GetClientCertificate(config);
+				if (authCert == null)
+				{
+					Logger.MethodExit(LogLevel.Debug);
+					throw new Exception("AuthType set to Certificate, but no certificate found!");
+				}
 
-			//	clientHandler.ClientCertificates.Add(authCert);
-			//}
+				clientHandler.ClientCertificates.Add(authCert);
+			}
 
 			string apiEndpoint = config.ApiEndpoint;
 			if (!apiEndpoint.EndsWith("/"))
@@ -346,7 +347,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			return new SectigoClient(restClient);
 		}
 
-/*		private static X509Certificate2 GetClientCertificate(SectigoConfig config)
+		private static X509Certificate2 GetClientCertificate(SectigoConfig config)
 		{
 			Logger.MethodEntry(LogLevel.Debug);
 			//Dictionary<string, object> caConnectionCertificateDetail = config["ClientCertificate"] as Dictionary<string, object>;
@@ -381,7 +382,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 				return foundCerts[0];
 
 			return null;
-		}*/
+		}
 		#endregion
 	}
 }
