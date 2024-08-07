@@ -18,3 +18,6 @@ In addition, for the admin account you plan to use, make sure it has the API adm
 
 In order to enroll for certificates the Keyfactor Command server must trust the trust chain. Once you set your Root and/or Subordinate CA in your Sectigo account, make sure to download and import the certificate chain into the Command Server certificate store
 
+## Certificate Template Creation Step
+
+When defining templates, the product IDs are unique to your Sectigo account. Log in to your Sectigo portal and go to your product types, and you should be able to retrieve the ID numbers there.
