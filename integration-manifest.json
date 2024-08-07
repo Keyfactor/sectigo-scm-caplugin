@@ -1,12 +1,84 @@
 {
-  "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
-  "integration_type": "anyca-plugin",
-  "name": "Sectigo Certificate Manager AnyCA REST Gateway Plugin",
-  "status": "production",
-  "support_level": "kf-supported",
-  "link_github": false,
-  "update_catalog": false,
-  "description": "Sectigo Certificate Manager plugin for the AnyCA REST Gateway framework",
-  "gateway_framework": "24.2.0",
-  "release_dir": "sectigo-scm-caplugin/bin/Release/net6.0"
+    "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
+    "integration_type": "anyca-plugin",
+    "name": "Sectigo Certificate Manager AnyCA REST Gateway Plugin",
+    "status": "production",
+    "support_level": "kf-supported",
+    "link_github": false,
+    "update_catalog": false,
+    "description": "Sectigo Certificate Manager plugin for the AnyCA REST Gateway framework",
+    "gateway_framework": "24.2.0",
+    "release_dir": "sectigo-scm-caplugin/bin/Release/net6.0",
+    "about": {
+        "carest": {
+            "ca_plugin_config": [
+                {
+                    "name": "ApiEndpoint",
+                    "description": "The Sectigo API endpoint to connect to. There are a few possible values, depending on your Sectigo account configuration. NOTE: If doing Certificate Auth, the endpoint should end in /private/"
+                },
+                {
+                    "name": "CustomerUri",
+                    "description": "This is a static value that represents the Sectigo account name. This can be found as part of the portal login URL. Ex: https://hard.cert-manager.com/customer/{CustomerUri}"
+                },
+                {
+                    "name": "AuthType",
+                    "description": "This value must be either Password or Certificate. It will determine which credentials are used to connect to the API. NOTE: Certificate Auth will not work properly if there is a proxy doing TLS inspection."
+                },
+                {
+                    "name": "Username",
+                    "description": "This is the username associated with the API login and will determine the security role in the Certificate Manager platform."
+                },
+                {
+                    "name": "Password",
+                    "description": "If AuthType is set to Password, this is the password associated with the API login. Ignored for Certificate AuthType."
+                },
+                {
+                    "name": "ClientCertificate",
+                    "description": "If AuthType is set to Certificate, this is the certificate the Gateway will use to authenticate to the API."
+                },
+                {
+                    "name": "PickupRetries",
+                    "description": "This setting determines the number of times the service will attempt to download a certificate after successful enrollment. If the certificate cannot be downloaded during this period it will be picked up during the next sync."
+                },
+                {
+                    "name": "PickupDelay",
+                    "description": "This is the number of seconds between retries. Be aware that the total # of retries times the number of seconds will be the maximum amount of time the Command portal will be occupied during enrollment. If the duration is too long, the request may timeout and cause unexpected results."
+                },
+                {
+                    "name": "PageSize",
+                    "description": "This is the number of records that will be processed per API call during a sync."
+                },
+                {
+                    "name": "ExternalRequestorFieldName",
+                    "description": "If you wish to be able to specify at enroll-time a requestor email address for enrollment notifications, first define a requestor field name in this setting. Afterwards, you can create a custom Enrollment Field in Command with that same name, and supply the email address in that enrollment field. If no custom requestor field is provided, the API will use the email address of the API user itself."
+                },
+                {
+                    "name": "SyncFilterProfileId",
+                    "description": "Comma-separated list of profile IDs to filter the sync on. If not provided, all certificates will be returned."
+                },
+                {
+                    "name": "ForceCompleteSync",
+                    "description": "By default, the sync only updates database records if the status of the certificate has changed. Set this to true to force all records to sync/update."
+                },
+                {
+                    "name": "Enabled",
+                    "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+                }
+            ],
+            "enrollment_config": [
+                {
+                    "name": "MultiDomain",
+                    "description": "This flag lets Keyfactor know if the certificate can contain multiple domain names. Depending on the setting, the SAN entries of the request will change to support Sectigo requirements."
+                },
+                {
+                    "name": "Organization",
+                    "description": "If the organization name is provided here, the Sectigo gateway will use that organization name in requests instead of whatever is in the O= field in the request subject."
+                },
+                {
+                    "name": "Department",
+                    "description": "If your Sectigo account is using department-level products, put the appropriate department name here. Previously, this was alternatively supplied in the OU= subject field, which is now deprecated."
+                }
+            ]
+        }
+    }
 }
