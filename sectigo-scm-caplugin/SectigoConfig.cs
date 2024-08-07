@@ -50,5 +50,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 		[JsonProperty("Enabled")]
 		public bool Enabled { get; set; } = true;
+
+		public Dictionary<string, object> ClientCertificate { get; set; }
 	}
 }

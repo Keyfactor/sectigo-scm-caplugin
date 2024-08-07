@@ -29,7 +29,6 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 	public class SectigoCAPlugin : IAnyCAPlugin
 	{
 		private SectigoConfig _config;
-		private SectigoClient Client { get; set; }
 		private readonly ILogger _logger;
 		private ICertificateDataReader _certificateDataReader;
 
@@ -47,7 +46,6 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			{
 				_config.PageSize = 200; // Largest value allowed by API
 			}
-			Client = SectigoClient.InitializeClient(configProvider.CAConnectionData);
 		}
 
 		public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
@@ -88,8 +86,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					department = productInfo.ProductParameters["Department"];
 					_logger.LogTrace($"Department: {department}");
 				}
-
-				var fieldList = Task.Run(async () => await Client.ListCustomFields()).Result;
+				var client = SectigoClient.InitializeClient(_config);
+				var fieldList = Task.Run(async () => await client.ListCustomFields()).Result;
 				var mandatoryFields = fieldList.CustomFields?.Where(f => f.mandatory);
 
 				_logger.LogDebug("Check for mandatory custom fields");
@@ -135,7 +133,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 					_logger.LogDebug($"Retrieving details of department {department}");
 
-					var orgDetails = Task.Run(async () => await Client.GetOrganizationDetails(dep.id)).Result;
+					var orgDetails = Task.Run(async () => await client.GetOrganizationDetails(dep.id)).Result;
 
 					if (orgDetails.CertTypes == null || orgDetails.CertTypes.Count == 0)
 					{
@@ -152,7 +150,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					// If no department is specified, look up the config of the organization itself
 
 					_logger.LogDebug($"Retrieving details of organization {orgStr}");
-					var orgDetails = Task.Run(async () => await Client.GetOrganizationDetails(org.id)).Result;
+					var orgDetails = Task.Run(async () => await client.GetOrganizationDetails(org.id)).Result;
 
 					if (orgDetails.CertTypes == null || orgDetails.CertTypes.Count == 0)
 					{
@@ -209,8 +207,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						_logger.LogDebug($"Submit {enrollmentType} request");
 						var jsonReq = JsonConvert.SerializeObject(request, Formatting.Indented);
 						_logger.LogDebug($"Request object: {jsonReq}");
-						sslId = Task.Run(async () => await Client.Enroll(request)).Result;
-						newCert = Task.Run(async () => await Client.GetCertificate(sslId)).Result;
+						sslId = Task.Run(async () => await client.Enroll(request)).Result;
+						newCert = Task.Run(async () => await client.GetCertificate(sslId)).Result;
 						_logger.LogDebug($"Enrolled for Certificate {newCert.CommonName} (ID: {newCert.Id}) | Status: {newCert.status}. Attempt to Pickup Certificate.");
 						break;
 
@@ -339,8 +337,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 		public List<string> GetProductIds()
 		{
-			//var profileIds = Task.Run(async () => await GetProfileIds()).Result;
-			return new List<string>(); //profileIds.ConvertAll<string> (x => x.ToString ());
+			var profileIds = Task.Run(async () => await GetProfileIds()).Result;
+			return profileIds.ConvertAll<string> (x => x.ToString ());
 		}
 
 		public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
@@ -350,7 +348,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			_logger.LogTrace($"Get Single Certificate Detail from Sectigo (sslId: {caRequestID})");
 			int sslId = int.Parse(caRequestID.Split('-')[0]);
 
-			var singleCert = Task.Run(async () => await Client.GetCertificate(sslId)).Result;
+			var client = SectigoClient.InitializeClient(_config);
+			var singleCert = Task.Run(async () => await client.GetCertificate(sslId)).Result;
 			_logger.LogTrace($"{singleCert.CommonName} ({singleCert.status}) retrieved from Sectigo.");
 
 			//Pending external validation, cannot download certificate data from API
@@ -425,7 +424,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			try
 			{
 				_logger.LogDebug("Attempting to ping Sectigo API");
-				_ = Task.Run(async () => await Client.ListOrganizations()).Result;
+				var client = SectigoClient.InitializeClient(_config);
+				_ = Task.Run(async () => await client.ListOrganizations()).Result;
 			}
 			catch (Exception ex)
 			{
@@ -440,7 +440,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 			try
 			{
-				var response = Task.Run(async () => await Client.RevokeSslCertificateById(int.Parse(caRequestID), RevokeReasonToString(revocationReason))).Result;
+				var client = SectigoClient.InitializeClient(_config);
+				var response = Task.Run(async () => await client.RevokeSslCertificateById(int.Parse(caRequestID), RevokeReasonToString(revocationReason))).Result;
 
 				_logger.MethodExit(LogLevel.Debug);
 				if (response)//will throw an exception if false
@@ -478,7 +479,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					string[] filterProfileIds = _config.SyncFilterProfileId.Split(',');
 					filter.Add("sslTypeId", filterProfileIds);
 				}
-				producerTask = Client.CertificateListProducer(certsToAdd, newCancelToken.Token, _config.PageSize, filter);
+				var client = SectigoClient.InitializeClient(_config);
+				producerTask = client.CertificateListProducer(certsToAdd, newCancelToken.Token, _config.PageSize, filter);
 
 				foreach (Certificate certToAdd in certsToAdd.GetConsumingEnumerable())
 				{
@@ -540,7 +542,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 					//Download to get full certdata required for sync process
 					_logger.LogTrace($"Attempt to Pickup Certificate {certToAdd.CommonName} (ID: {certToAdd.Id})");
-					var certdataApi = Task.Run(async () => await Client.PickupCertificate(certToAdd.Id, certToAdd.CommonName)).Result;
+					var certdataApi = Task.Run(async () => await client.PickupCertificate(certToAdd.Id, certToAdd.CommonName)).Result;
 					if (certdataApi != null)
 						certData = Convert.ToBase64String(certdataApi.GetRawCertData());
 
@@ -617,7 +619,9 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 		public async Task ValidateProductInfo(EnrollmentProductInfo productInfo, Dictionary<string, object> connectionInfo)
 		{
 			_logger.MethodEntry(LogLevel.Debug);
-			SectigoClient localClient = SectigoClient.InitializeClient(connectionInfo);
+			string rawConfig = JsonConvert.SerializeObject(connectionInfo);
+			var parsedConfig = JsonConvert.DeserializeObject<SectigoConfig>(rawConfig);
+			SectigoClient localClient = SectigoClient.InitializeClient(parsedConfig);
 
 			var profileList = Task.Run(async () => await localClient.ListSslProfiles()).Result;
 			if (profileList.SslProfiles.Where(p => p.id == int.Parse(productInfo.ProductID)).Count() == 0)
@@ -630,25 +634,29 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 		private async Task<Organization> GetOrganizationAsync(string orgName)
 		{
-			var orgList = await Client.ListOrganizations();
+			var client = SectigoClient.InitializeClient(_config);
+			var orgList = await client.ListOrganizations();
 			return orgList.Organizations.Where(x => x.name.ToLower().Equals(orgName.ToLower())).FirstOrDefault();
 		}
 
 		private async Task<int> GetProfileTerm(int profileId)
 		{
-			var profileList = await Client.ListSslProfiles();
+			var client = SectigoClient.InitializeClient(_config);
+			var profileList = await client.ListSslProfiles();
 			return profileList.SslProfiles.Where(x => x.id == profileId).FirstOrDefault().terms[0];
 		}
 
 		private async Task<Profile> GetProfile(int profileId)
 		{
-			var profileList = await Client.ListSslProfiles();
+			var client = SectigoClient.InitializeClient(_config);
+			var profileList = await client.ListSslProfiles();
 			return profileList.SslProfiles.Where(x => x.id == profileId).FirstOrDefault();
 		}
 
 		private async Task<List<int>> GetProfileIds()
 		{
-			var profileList = await Client.ListSslProfiles();
+			var client = SectigoClient.InitializeClient(_config);
+			var profileList = await client.ListSslProfiles();
 			return profileList.SslProfiles.Select(x => x.id).ToList();
 		}
 
@@ -689,7 +697,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			while (retryCounter < _config.PickupRetries)
 			{
 				_logger.LogDebug($"Try number {retryCounter + 1} to pickup enrolled certificate");
-				var certificate = Task.Run(async () => await Client.PickupCertificate(sslId, subject)).Result;
+				var client = SectigoClient.InitializeClient(_config);
+				var certificate = Task.Run(async () => await client.PickupCertificate(sslId, subject)).Result;
 				if (certificate != null && !String.IsNullOrEmpty(certificate.Subject))
 				{
 					_logger.LogInformation($"Successfully enrolled for certificate {certificate.Subject}");
@@ -723,7 +732,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			while (retryCounter < _config.PickupRetries)
 			{
 				_logger.LogDebug($"Try number {retryCounter + 1} to pickup single certificate");
-				var certificate = Task.Run(async () => await Client.PickupCertificate(sslId, subject)).Result;
+				var client = SectigoClient.InitializeClient(_config);
+				var certificate = Task.Run(async () => await client.PickupCertificate(sslId, subject)).Result;
 				if (certificate != null && !String.IsNullOrEmpty(certificate.Subject))
 				{
 					_logger.LogInformation($"Successfully picked up certificate {certificate.Subject}");

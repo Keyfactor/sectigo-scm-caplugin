@@ -303,17 +303,16 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			}
 		}
 
-		public static SectigoClient InitializeClient(Dictionary<string, object> connectionInfo)
+		public static SectigoClient InitializeClient(SectigoConfig config)
 		{
 			Logger.MethodEntry(LogLevel.Debug);
 		
-			SectigoConfig localConfig = JsonConvert.DeserializeObject<SectigoConfig>(JsonConvert.SerializeObject(connectionInfo));
 			HttpClientHandler clientHandler = new HttpClientHandler();
 
-			if (localConfig.AuthenticationType.ToLower() == "certificate")
+			if (config.AuthenticationType.ToLower() == "certificate")
 			{
 				clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-				X509Certificate2 authCert = GetClientCertificate(connectionInfo);
+				X509Certificate2 authCert = GetClientCertificate(config);
 				if (authCert == null)
 				{
 					Logger.MethodExit(LogLevel.Debug);
@@ -323,7 +322,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 				clientHandler.ClientCertificates.Add(authCert);
 			}
 
-			string apiEndpoint = localConfig.ApiEndpoint;
+			string apiEndpoint = config.ApiEndpoint;
 			if (!apiEndpoint.EndsWith("/"))
 			{
 				apiEndpoint += "/";
@@ -334,31 +333,31 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 				BaseAddress = new Uri(apiEndpoint)
 			};
 
-			restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_URI_KEY, localConfig.CustomerUri);
-			restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_LOGIN_KEY, localConfig.Username);
+			restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_URI_KEY, config.CustomerUri);
+			restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_LOGIN_KEY, config.Username);
 			//Determine
 
-			if (localConfig.AuthenticationType.ToLower() == "password")
+			if (config.AuthenticationType.ToLower() == "password")
 			{
-				restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_PASSWORD_KEY, localConfig.Password);
+				restClient.DefaultRequestHeaders.Add(Constants.CUSTOMER_PASSWORD_KEY, config.Password);
 			}
 
 			Logger.MethodExit(LogLevel.Debug);
 			return new SectigoClient(restClient);
 		}
 
-		private static X509Certificate2 GetClientCertificate(Dictionary<string, object> config)
+		private static X509Certificate2 GetClientCertificate(SectigoConfig config)
 		{
 			Logger.MethodEntry(LogLevel.Debug);
-			Dictionary<string, object> caConnectionCertificateDetail = config["ClientCertificate"] as Dictionary<string, object>;
+			//Dictionary<string, object> caConnectionCertificateDetail = config["ClientCertificate"] as Dictionary<string, object>;
 
 			StoreName sn;
 			StoreLocation sl;
-			string thumbprint = (string)caConnectionCertificateDetail["Thumbprint"];
+			string thumbprint = (string)config.ClientCertificate["Thumbprint"];
 
 			if (String.IsNullOrEmpty(thumbprint) ||
-				!Enum.TryParse((string)caConnectionCertificateDetail["StoreName"], out sn) ||
-				!Enum.TryParse((string)caConnectionCertificateDetail["StoreLocation"], out sl))
+				!Enum.TryParse((string)config.ClientCertificate["StoreName"], out sn) ||
+				!Enum.TryParse((string)config.ClientCertificate["StoreLocation"], out sl))
 			{
 				throw new Exception("Unable to find client authentication certificate");
 			}
