@@ -351,37 +351,53 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 		{
 			Logger.MethodEntry(LogLevel.Debug);
 			//Dictionary<string, object> caConnectionCertificateDetail = config["ClientCertificate"] as Dictionary<string, object>;
+			X509Certificate2 clientCert = null;
 
-			StoreName sn;
-			StoreLocation sl;
-			string thumbprint = (string)config.ClientCertificate["Thumbprint"];
-
-			if (String.IsNullOrEmpty(thumbprint) ||
-				!Enum.TryParse((string)config.ClientCertificate["StoreName"], out sn) ||
-				!Enum.TryParse((string)config.ClientCertificate["StoreLocation"], out sl))
+			if (!string.IsNullOrEmpty(config.Certificate.Thumbprint))
 			{
-				throw new Exception("Unable to find client authentication certificate");
+				StoreName sn;
+				StoreLocation sl;
+				string thumbprint = config.Certificate.Thumbprint;
+
+				if (String.IsNullOrEmpty(thumbprint) ||
+					!Enum.TryParse(config.Certificate.StoreName, out sn) ||
+					!Enum.TryParse(config.Certificate.StoreLocation, out sl))
+				{
+					throw new Exception("Unable to find client authentication certificate");
+				}
+
+				X509Certificate2Collection foundCerts;
+				using (X509Store currentStore = new X509Store(sn, sl))
+				{
+					Logger.LogTrace($"Search for client auth certificates with Thumprint {thumbprint} in the {sn}{sl} certificate store");
+
+					currentStore.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+					foundCerts = currentStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, true);
+					Logger.LogTrace($"Found {foundCerts.Count} certificates in the {currentStore.Name} store");
+					currentStore.Close();
+				}
+				if (foundCerts.Count > 1)
+				{
+					throw new Exception($"Multiple certificates with Thumprint {thumbprint} found in the {sn}{sl} certificate store");
+				}
+				if (foundCerts.Count > 0)
+					clientCert = foundCerts[0];
 			}
-
-			X509Certificate2Collection foundCerts;
-			using (X509Store currentStore = new X509Store(sn, sl))
+			else
 			{
-				Logger.LogTrace($"Search for client auth certificates with Thumprint {thumbprint} in the {sn}{sl} certificate store");
-
-				currentStore.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-				foundCerts = currentStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, true);
-				Logger.LogTrace($"Found {foundCerts.Count} certificates in the {currentStore.Name} store");
-				currentStore.Close();
-			}
-			if (foundCerts.Count > 1)
-			{
-				throw new Exception($"Multiple certificates with Thumprint {thumbprint} found in the {sn}{sl} certificate store");
+				// Cert is provided via pfx file instead of cert store
+				try
+				{
+					X509Certificate2 cert = new X509Certificate2(config.Certificate.CertificatePath, config.Certificate.CertificatePassword);
+					clientCert = cert;
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Unable to open the client certificate file with the given password. Error: {ex.Message}");
+				}
 			}
 			Logger.MethodExit(LogLevel.Debug);
-			if (foundCerts.Count > 0)
-				return foundCerts[0];
-
-			return null;
+			return clientCert;
 		}
 		#endregion
 	}

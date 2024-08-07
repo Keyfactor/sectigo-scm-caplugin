@@ -46,11 +46,21 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 		public string SyncFilterProfileId { get; set; }
 
 		[JsonProperty("ForceCompleteSync", DefaultValueHandling = DefaultValueHandling.Populate)]
-		public bool ForceCompleteSync { get; set; }
+		public bool ForceCompleteSync { get; set; } = false;
 
 		[JsonProperty("Enabled")]
 		public bool Enabled { get; set; } = true;
 
-		public Dictionary<string, object> ClientCertificate { get; set; }
+		[JsonProperty("ClientCertificate")]
+		public ClientCertificate Certificate { get; set; }
+	}
+
+	public class ClientCertificate
+	{
+		public string StoreName { get; set; }
+		public string StoreLocation { get; set; }
+		public string Thumbprint { get; set; }
+		public string CertificatePath { get; set; }
+		public string CertificatePassword { get; set; }
 	}
 }
