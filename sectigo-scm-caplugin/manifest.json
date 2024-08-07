@@ -1,0 +1,10 @@
+{
+  "extensions": {
+    "Keyfactor.AnyGateway.Extensions.IAnyCAPlugin": {
+      "SectigoCAPlugin": {
+        "assemblypath": "SectigoCAPlugin.dll",
+        "TypeFullName": "Keyfactor.Extensions.CAPlugin.Sectigo.SectigoCAPlugin"
+      }
+    }
+  }
+}
