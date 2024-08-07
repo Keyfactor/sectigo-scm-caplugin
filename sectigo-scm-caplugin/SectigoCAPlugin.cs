@@ -339,8 +339,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 		public List<string> GetProductIds()
 		{
-			var profileIds = Task.Run(async () => await GetProfileIds()).Result;
-			return profileIds.ConvertAll<string> (x => x.ToString ());
+			//var profileIds = Task.Run(async () => await GetProfileIds()).Result;
+			return new List<string>(); //profileIds.ConvertAll<string> (x => x.ToString ());
 		}
 
 		public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
