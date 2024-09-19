@@ -190,7 +190,11 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					case EnrollmentType.Reissue:
 					case EnrollmentType.Renew:
 					case EnrollmentType.RenewOrReissue:
-
+						string comment = "";
+						if (productInfo.ProductParameters.ContainsKey("Keyfactor-Requester"))
+						{
+							comment = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}";
+						}
 						EnrollRequest request = new EnrollRequest
 						{
 							csr = csr,
@@ -203,7 +207,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 							numberServers = 1,
 							serverType = -1,
 							subjAltNames = sanList,//,
-							comments = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}"//this is how the current gateway passes this data
+							comments = comment
 						};
 
 						_logger.LogDebug($"Submit {enrollmentType} request");
