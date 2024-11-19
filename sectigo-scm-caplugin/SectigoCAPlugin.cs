@@ -190,7 +190,11 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					case EnrollmentType.Reissue:
 					case EnrollmentType.Renew:
 					case EnrollmentType.RenewOrReissue:
-
+						string comment = "";
+						if (productInfo.ProductParameters.ContainsKey("Keyfactor-Requester"))
+						{
+							comment = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}";
+						}
 						EnrollRequest request = new EnrollRequest
 						{
 							csr = csr,
@@ -203,7 +207,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 							numberServers = 1,
 							serverType = -1,
 							subjAltNames = sanList,//,
-							comments = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}"//this is how the current gateway passes this data
+							comments = comment
 						};
 
 						_logger.LogDebug($"Submit {enrollmentType} request");
@@ -511,22 +515,23 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						}
 					}
 
-					//are we syncing a reissued cert?
-					//Reissued certs keep the same ID, but may have different data and cause index errors on sync
-					//Removed reissued certs from enrollment, but may be some stragglers for legacy installs
-					int syncReqId = 0;
-					if (dbCertId.Contains('-'))
-					{
-						syncReqId = int.Parse(dbCertId.Split('-')[0]);
-					}
-					else
-					{
-						syncReqId = int.Parse(dbCertId);
-					}
 
+					int syncReqId = 0;
 					string certData = string.Empty;
 					if (!string.IsNullOrEmpty(dbCertId))
 					{
+						//are we syncing a reissued cert?
+						//Reissued certs keep the same ID, but may have different data and cause index errors on sync
+						//Removed reissued certs from enrollment, but may be some stragglers for legacy installs
+						if (dbCertId.Contains('-'))
+						{
+							syncReqId = int.Parse(dbCertId.Split('-')[0]);
+						}
+						else
+						{
+							syncReqId = int.Parse(dbCertId);
+						}
+
 						//we found an existing cert from the DB by serial number.
 						//This should already be in the DB so no need to sync again unless status changes or
 						//admin has forced a complete sync
