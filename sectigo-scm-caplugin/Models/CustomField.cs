@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +14,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Models
 
 		public string value { get; set; }
 
+		[JsonIgnore]
 		public bool mandatory { get; set; }
 	}
 }

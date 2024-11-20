@@ -90,16 +90,30 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 				}
 				var client = SectigoClient.InitializeClient(_config);
 				var fieldList = Task.Run(async () => await client.ListCustomFields()).Result;
-				var mandatoryFields = fieldList.CustomFields?.Where(f => f.mandatory);
+				var allFields = fieldList.CustomFields?.Select(f => f);
 
-				_logger.LogDebug("Check for mandatory custom fields");
-				foreach (CustomField reqField in mandatoryFields)
+				_logger.LogDebug("Check for custom fields");
+				List<CustomField> customFields = new List<CustomField>();
+				foreach (CustomField field in allFields)
 				{
-					_logger.LogTrace($"Checking product parameters for {reqField.name}");
-					if (!productInfo.ProductParameters.ContainsKey(reqField.name))
+					_logger.LogTrace($"Checking product parameters for {field.name}");
+					if (productInfo.ProductParameters.ContainsKey(field.name) && !string.IsNullOrEmpty(productInfo.ProductParameters[field.name]))
 					{
-						_logger.MethodExit(LogLevel.Debug);
-						throw new Exception($"Template {productInfo.ProductID} or Enrollment Fields do not contain a mandatory custom field value for of {reqField.name}");
+						var value = productInfo.ProductParameters[field.name];
+						_logger.LogDebug($"Found value for custom field {field.name}: {value}");
+						customFields.Add(new CustomField() { name = field.name, value = value });
+					}
+					else
+					{
+						if (field.mandatory)
+						{
+							_logger.MethodExit(LogLevel.Debug);
+							throw new Exception($"Custom field {field.name} is mandatory, but no value provided by template {productInfo.ProductID} or Enrollment Fields");
+						}
+						else
+						{
+							_logger.LogDebug($"No value found for custom field {field.name}, but it is not mandatory.");
+						}
 					}
 				}
 				_logger.LogDebug($"Search for Organization by Name {orgStr}");
@@ -207,7 +221,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 							numberServers = 1,
 							serverType = -1,
 							subjAltNames = sanList,//,
-							comments = comment
+							comments = comment,
+							customFields = customFields
 						};
 
 						_logger.LogDebug($"Submit {enrollmentType} request");
