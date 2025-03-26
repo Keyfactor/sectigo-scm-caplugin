@@ -574,10 +574,20 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						continue;
 					}
 
+					string prodId = "";
+					try
+					{
+						_logger.LogTrace($"Cert ID: {certToAdd.Id.ToString()}");
+						_logger.LogTrace($"Sync ID: {syncReqId.ToString()}");
+						_logger.LogTrace($"Product ID: {certToAdd.CertType.id.ToString()}");
+						prodId = certToAdd.CertType.id.ToString();
+					}
+					catch { }
+
 					AnyCAPluginCertificate caCertToAdd = new AnyCAPluginCertificate
 					{
 						CARequestID = syncReqId == 0 ? certToAdd.Id.ToString() : syncReqId.ToString(),
-						ProductID = certToAdd.CertType.id.ToString(),
+						ProductID = prodId,
 						Certificate = certData,
 						Status = ConvertToKeyfactorStatus(certToAdd.status, certToAdd.Id),
 						RevocationReason = ConvertToKeyfactorStatus(certToAdd.status, certToAdd.Id) == (int)EndEntityStatus.REVOKED ? 0 : 0xffffff,
