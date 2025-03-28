@@ -209,6 +209,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						{
 							comment = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}";
 						}
+
 						EnrollRequest request = new EnrollRequest
 						{
 							csr = csr,
