@@ -113,8 +113,6 @@ In addition, for the admin account you plan to use, make sure it has the API adm
 
 
 
-
-
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE).

@@ -90,16 +90,30 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 				}
 				var client = SectigoClient.InitializeClient(_config);
 				var fieldList = Task.Run(async () => await client.ListCustomFields()).Result;
-				var mandatoryFields = fieldList.CustomFields?.Where(f => f.mandatory);
+				var allFields = fieldList.CustomFields?.Select(f => f);
 
-				_logger.LogDebug("Check for mandatory custom fields");
-				foreach (CustomField reqField in mandatoryFields)
+				_logger.LogDebug("Check for custom fields");
+				List<CustomField> customFields = new List<CustomField>();
+				foreach (CustomField field in allFields)
 				{
-					_logger.LogTrace($"Checking product parameters for {reqField.name}");
-					if (!productInfo.ProductParameters.ContainsKey(reqField.name))
+					_logger.LogTrace($"Checking product parameters for {field.name}");
+					if (productInfo.ProductParameters.ContainsKey(field.name) && !string.IsNullOrEmpty(productInfo.ProductParameters[field.name]))
 					{
-						_logger.MethodExit(LogLevel.Debug);
-						throw new Exception($"Template {productInfo.ProductID} or Enrollment Fields do not contain a mandatory custom field value for of {reqField.name}");
+						var value = productInfo.ProductParameters[field.name];
+						_logger.LogDebug($"Found value for custom field {field.name}: {value}");
+						customFields.Add(new CustomField() { name = field.name, value = value });
+					}
+					else
+					{
+						if (field.mandatory)
+						{
+							_logger.MethodExit(LogLevel.Debug);
+							throw new Exception($"Custom field {field.name} is mandatory, but no value provided by template {productInfo.ProductID} or Enrollment Fields");
+						}
+						else
+						{
+							_logger.LogDebug($"No value found for custom field {field.name}, but it is not mandatory.");
+						}
 					}
 				}
 				_logger.LogDebug($"Search for Organization by Name {orgStr}");
@@ -190,6 +204,11 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					case EnrollmentType.Reissue:
 					case EnrollmentType.Renew:
 					case EnrollmentType.RenewOrReissue:
+						string comment = "";
+						if (productInfo.ProductParameters.ContainsKey("Keyfactor-Requester"))
+						{
+							comment = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}";
+						}
 
 						EnrollRequest request = new EnrollRequest
 						{
@@ -203,7 +222,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 							numberServers = 1,
 							serverType = -1,
 							subjAltNames = sanList,//,
-							comments = $"CERTIFICATE_REQUESTOR: {productInfo.ProductParameters["Keyfactor-Requester"]}"//this is how the current gateway passes this data
+							comments = comment,
+							customFields = customFields
 						};
 
 						_logger.LogDebug($"Submit {enrollmentType} request");
@@ -511,22 +531,23 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						}
 					}
 
-					//are we syncing a reissued cert?
-					//Reissued certs keep the same ID, but may have different data and cause index errors on sync
-					//Removed reissued certs from enrollment, but may be some stragglers for legacy installs
-					int syncReqId = 0;
-					if (dbCertId.Contains('-'))
-					{
-						syncReqId = int.Parse(dbCertId.Split('-')[0]);
-					}
-					else
-					{
-						syncReqId = int.Parse(dbCertId);
-					}
 
+					int syncReqId = 0;
 					string certData = string.Empty;
 					if (!string.IsNullOrEmpty(dbCertId))
 					{
+						//are we syncing a reissued cert?
+						//Reissued certs keep the same ID, but may have different data and cause index errors on sync
+						//Removed reissued certs from enrollment, but may be some stragglers for legacy installs
+						if (dbCertId.Contains('-'))
+						{
+							syncReqId = int.Parse(dbCertId.Split('-')[0]);
+						}
+						else
+						{
+							syncReqId = int.Parse(dbCertId);
+						}
+
 						//we found an existing cert from the DB by serial number.
 						//This should already be in the DB so no need to sync again unless status changes or
 						//admin has forced a complete sync
@@ -554,10 +575,20 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						continue;
 					}
 
+					string prodId = "";
+					try
+					{
+						_logger.LogTrace($"Cert ID: {certToAdd.Id.ToString()}");
+						_logger.LogTrace($"Sync ID: {syncReqId.ToString()}");
+						_logger.LogTrace($"Product ID: {certToAdd.CertType.id.ToString()}");
+						prodId = certToAdd.CertType.id.ToString();
+					}
+					catch { }
+
 					AnyCAPluginCertificate caCertToAdd = new AnyCAPluginCertificate
 					{
 						CARequestID = syncReqId == 0 ? certToAdd.Id.ToString() : syncReqId.ToString(),
-						ProductID = certToAdd.CertType.id.ToString(),
+						ProductID = prodId,
 						Certificate = certData,
 						Status = ConvertToKeyfactorStatus(certToAdd.status, certToAdd.Id),
 						RevocationReason = ConvertToKeyfactorStatus(certToAdd.status, certToAdd.Id) == (int)EndEntityStatus.REVOKED ? 0 : 0xffffff,
