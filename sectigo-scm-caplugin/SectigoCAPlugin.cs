@@ -462,7 +462,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			try
 			{
 				var client = SectigoClient.InitializeClient(_config);
-				var response = Task.Run(async () => await client.RevokeSslCertificateById(int.Parse(caRequestID), RevokeReasonToString(revocationReason))).Result;
+				var response = Task.Run(async () => await client.RevokeSslCertificateById(int.Parse(caRequestID), (int)revocationReason, RevokeReasonToString(revocationReason))).Result;
 
 				_logger.MethodExit(LogLevel.Debug);
 				if (response)//will throw an exception if false
@@ -874,26 +874,18 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 		{
 			switch (revokeType)
 			{
+				case 0:
+					return "Unspecified";
 				case 1:
 					return "Compromised Key";
-
-				case 2:
-					return "CA Compromised";
-
 				case 3:
 					return "Affiliation Changed";
-
 				case 4:
 					return "Superseded";
-
 				case 5:
 					return "Cessation of Operation";
-
-				case 6:
-					return "Certificate Hold";
-
 				default:
-					return "Unspecified";
+					throw new Exception($"Invalid revocation code: {revokeType.ToString()}. Valid values are 0,1,3-5");
 			}
 		}
 	}
