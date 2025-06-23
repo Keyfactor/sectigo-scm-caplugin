@@ -140,10 +140,11 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			return await ProcessResponse<List<Certificate>>(response);
 		}
 
-		public async Task<bool> RevokeSslCertificateById(int sslId, string revreason)
+		public async Task<bool> RevokeSslCertificateById(int sslId, int revcode, string revreason)
 		{
 			JObject o = JObject.FromObject(new
 			{
+				reasonCode = revcode,
 				reason = revreason
 			});
 			var response = await RestClient.PostAsJsonAsync($"api/ssl/v1/revoke/{sslId}", o);
