@@ -9,6 +9,7 @@
     "description": "Sectigo Certificate Manager plugin for the AnyCA REST Gateway framework",
     "gateway_framework": "24.2.0",
     "release_dir": "sectigo-scm-caplugin/bin/Release/net6.0",
+    "release_project": "sectigo-scm-caplugin/sectigo-scm-caplugin.csproj",
     "about": {
         "carest": {
             "ca_plugin_config": [
