@@ -7,3 +7,6 @@ Bugfix - Fix for custom fields in enrollment
 
 1.0.2  
 Handle change to Sectigo API Revocation call  
+
+1.0.3  
+Fix for JSON serialization of revocation  
