@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Keyfactor.AnyGateway.Extensions;
+
+using Newtonsoft.Json;
 
 using System;
 using System.Collections.Generic;
@@ -53,14 +55,5 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 		[JsonProperty("ClientCertificate")]
 		public ClientCertificate Certificate { get; set; }
-	}
-
-	public class ClientCertificate
-	{
-		public string StoreName { get; set; }
-		public string StoreLocation { get; set; }
-		public string Thumbprint { get; set; }
-		public string CertificatePath { get; set; }
-		public string CertificatePassword { get; set; }
 	}
 }
