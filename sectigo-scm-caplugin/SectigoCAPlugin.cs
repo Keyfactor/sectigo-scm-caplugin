@@ -35,7 +35,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 		private ICertificateDataReader _certificateDataReader;
 		private ICertificateResolver _certificateResolver;
 
-		public SectigoCAPlugin(ICertificateResolver certResolver)
+		public SectigoCAPlugin(ICertificateResolver certResolver = null)
 		{
 			_logger = LogHandler.GetClassLogger<SectigoCAPlugin>();
 			_certificateResolver = certResolver;
