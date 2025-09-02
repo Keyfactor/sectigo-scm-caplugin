@@ -135,7 +135,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 
 		public async Task<List<Certificate>> PageCertificates(int position = 0, int size = 25, string filter = "")
 		{
-			string filterQueryString = String.IsNullOrEmpty(filter) ? string.Empty : $"&{filter}";
+			string filterQueryString = string.IsNullOrEmpty(filter) ? string.Empty : $"&{filter}";
 			Logger.LogTrace($"API Request: api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			var response = await RestClient.GetAsync($"api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			return await ProcessResponse<List<Certificate>>(response);
@@ -321,6 +321,22 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 					Logger.MethodExit(LogLevel.Debug);
 					throw new Exception("AuthType set to Certificate, but no certificate found!");
 				}
+
+				Logger.LogDebug($"CERT DETAILS: \nSerial Number: {authCert.GetSerialNumberString}\nHas PK: {authCert.HasPrivateKey.ToString()}\nSubject: {authCert.Subject}");
+
+				Logger.LogTrace("Checking for private key permissions.");
+				try
+				{
+					//https://www.pkisolutions.com/accessing-and-using-certificate-private-keys-in-net-framework-net-core/
+					_ = authCert.GetRSAPrivateKey();
+					_ = authCert.GetDSAPrivateKey();
+					_ = authCert.GetECDsaPrivateKey();
+				}
+				catch
+				{
+					throw new Exception("Unable to access the authentication certificate's private key.");
+				}
+
 
 				clientHandler.ClientCertificates.Add(authCert);
 			}
