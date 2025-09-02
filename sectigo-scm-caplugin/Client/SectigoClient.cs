@@ -315,7 +315,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			if (config.AuthenticationType.ToLower() == "certificate")
 			{
 				clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-				//Logger.LogTrace($"Cert info: \nSource: {config.Certificate.Source}\nThumb: {config.Certificate.Thumbprint}\nStoreName: {config.Certificate.StoreName}\nStoreLoc: {config.Certificate.StoreLocation}\nPath: {config.Certificate.CertificatePath}\nPass: {config.Certificate.CertificatePassword}\nImported: {config.Certificate.ImportedCertificate}\nImportedPass: {config.Certificate.ImportedCertificatePassword}");
+				Logger.LogTrace($"Resolving certificate. Source: {config.Certificate.Source}");
 				X509Certificate2 authCert = null;
 				if (!string.IsNullOrEmpty(config.Certificate.ImportedCertificate))
 				{
@@ -331,21 +331,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 					throw new Exception("AuthType set to Certificate, but no certificate found!");
 				}
 
-				Logger.LogDebug($"CERT DETAILS: \nSerial Number: {authCert.GetSerialNumberString}\nHas PK: {authCert.HasPrivateKey.ToString()}\nSubject: {authCert.Subject}");
-
-				Logger.LogTrace("Checking for private key permissions.");
-				try
-				{
-					//https://www.pkisolutions.com/accessing-and-using-certificate-private-keys-in-net-framework-net-core/
-					_ = authCert.GetRSAPrivateKey();
-					_ = authCert.GetDSAPrivateKey();
-					_ = authCert.GetECDsaPrivateKey();
-				}
-				catch
-				{
-					throw new Exception("Unable to access the authentication certificate's private key.");
-				}
-
+				Logger.LogTrace($"Auth cert found. CERT DETAILS: \nSerial Number: {authCert.GetSerialNumberString()}\nHas PK: {authCert.HasPrivateKey.ToString()}\nSubject: {authCert.Subject}");
 
 				clientHandler.ClientCertificates.Add(authCert);
 			}
