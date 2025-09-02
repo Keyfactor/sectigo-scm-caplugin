@@ -315,6 +315,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			if (config.AuthenticationType.ToLower() == "certificate")
 			{
 				clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+				Logger.LogTrace($"Cert info: \nSource: {config.Certificate.Source}\nThumb: {config.Certificate.Thumbprint}\nStoreName: {config.Certificate.StoreName}\nStoreLoc: {config.Certificate.StoreLocation}\nPath: {config.Certificate.CertificatePath}\nPass: {config.Certificate.CertificatePassword}\nImported: {config.Certificate.ImportedCertificate}\nImportedPass: {config.Certificate.ImportedCertificatePassword}")
 				X509Certificate2 authCert = certResolver.ResolveCertificate(config.Certificate);
 				if (authCert == null)
 				{
