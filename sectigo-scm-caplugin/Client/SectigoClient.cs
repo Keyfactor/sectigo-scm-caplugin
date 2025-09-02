@@ -1,4 +1,5 @@
-﻿using Keyfactor.Extensions.CAPlugin.Sectigo.API;
+﻿using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.Sectigo.API;
 using Keyfactor.Extensions.CAPlugin.Sectigo.Models;
 using Keyfactor.Logging;
 
@@ -134,7 +135,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 
 		public async Task<List<Certificate>> PageCertificates(int position = 0, int size = 25, string filter = "")
 		{
-			string filterQueryString = String.IsNullOrEmpty(filter) ? string.Empty : $"&{filter}";
+			string filterQueryString = string.IsNullOrEmpty(filter) ? string.Empty : $"&{filter}";
 			Logger.LogTrace($"API Request: api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			var response = await RestClient.GetAsync($"api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			return await ProcessResponse<List<Certificate>>(response);
@@ -305,7 +306,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			}
 		}
 
-		public static SectigoClient InitializeClient(SectigoConfig config)
+		public static SectigoClient InitializeClient(SectigoConfig config, ICertificateResolver certResolver)
 		{
 			Logger.MethodEntry(LogLevel.Debug);
 		
@@ -314,12 +315,29 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			if (config.AuthenticationType.ToLower() == "certificate")
 			{
 				clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-				X509Certificate2 authCert = GetClientCertificate(config);
+				Logger.LogTrace($"Cert info: \nSource: {config.Certificate.Source}\nThumb: {config.Certificate.Thumbprint}\nStoreName: {config.Certificate.StoreName}\nStoreLoc: {config.Certificate.StoreLocation}\nPath: {config.Certificate.CertificatePath}\nPass: {config.Certificate.CertificatePassword}\nImported: {config.Certificate.ImportedCertificate}\nImportedPass: {config.Certificate.ImportedCertificatePassword}")
+				X509Certificate2 authCert = certResolver.ResolveCertificate(config.Certificate);
 				if (authCert == null)
 				{
 					Logger.MethodExit(LogLevel.Debug);
 					throw new Exception("AuthType set to Certificate, but no certificate found!");
 				}
+
+				Logger.LogDebug($"CERT DETAILS: \nSerial Number: {authCert.GetSerialNumberString}\nHas PK: {authCert.HasPrivateKey.ToString()}\nSubject: {authCert.Subject}");
+
+				Logger.LogTrace("Checking for private key permissions.");
+				try
+				{
+					//https://www.pkisolutions.com/accessing-and-using-certificate-private-keys-in-net-framework-net-core/
+					_ = authCert.GetRSAPrivateKey();
+					_ = authCert.GetDSAPrivateKey();
+					_ = authCert.GetECDsaPrivateKey();
+				}
+				catch
+				{
+					throw new Exception("Unable to access the authentication certificate's private key.");
+				}
+
 
 				clientHandler.ClientCertificates.Add(authCert);
 			}
@@ -348,58 +366,6 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			return new SectigoClient(restClient);
 		}
 
-		private static X509Certificate2 GetClientCertificate(SectigoConfig config)
-		{
-			Logger.MethodEntry(LogLevel.Debug);
-			//Dictionary<string, object> caConnectionCertificateDetail = config["ClientCertificate"] as Dictionary<string, object>;
-			X509Certificate2 clientCert = null;
-
-			if (!string.IsNullOrEmpty(config.Certificate.Thumbprint))
-			{
-				StoreName sn;
-				StoreLocation sl;
-				string thumbprint = config.Certificate.Thumbprint;
-
-				if (String.IsNullOrEmpty(thumbprint) ||
-					!Enum.TryParse(config.Certificate.StoreName, out sn) ||
-					!Enum.TryParse(config.Certificate.StoreLocation, out sl))
-				{
-					throw new Exception("Unable to find client authentication certificate");
-				}
-
-				X509Certificate2Collection foundCerts;
-				using (X509Store currentStore = new X509Store(sn, sl))
-				{
-					Logger.LogTrace($"Search for client auth certificates with Thumprint {thumbprint} in the {sn}{sl} certificate store");
-
-					currentStore.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-					foundCerts = currentStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, true);
-					Logger.LogTrace($"Found {foundCerts.Count} certificates in the {currentStore.Name} store");
-					currentStore.Close();
-				}
-				if (foundCerts.Count > 1)
-				{
-					throw new Exception($"Multiple certificates with Thumprint {thumbprint} found in the {sn}{sl} certificate store");
-				}
-				if (foundCerts.Count > 0)
-					clientCert = foundCerts[0];
-			}
-			else
-			{
-				// Cert is provided via pfx file instead of cert store
-				try
-				{
-					X509Certificate2 cert = new X509Certificate2(config.Certificate.CertificatePath, config.Certificate.CertificatePassword);
-					clientCert = cert;
-				}
-				catch (Exception ex)
-				{
-					throw new Exception($"Unable to open the client certificate file with the given password. Error: {ex.Message}");
-				}
-			}
-			Logger.MethodExit(LogLevel.Debug);
-			return clientCert;
-		}
 		#endregion
 	}
 }
