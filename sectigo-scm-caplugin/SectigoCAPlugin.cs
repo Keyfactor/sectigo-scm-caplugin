@@ -520,7 +520,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						_logger.LogError($"Synchronize task failed with the following message: {producerTask.Exception.Flatten().Message}");
 						throw producerTask.Exception.Flatten();
 					}
-
+					_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Processing record {certToAdd.Id}");
 					string dbCertId = null;
 					int dbCertStatus = -1;
 					//serial number is blank on certs that have not been issued (awaiting approval)
@@ -566,23 +566,26 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					}
 
 					//Download to get full certdata required for sync process
-					_logger.LogTrace($"Attempt to Pickup Certificate {certToAdd.CommonName} (ID: {certToAdd.Id})");
+					_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Attempt to Pickup Certificate {certToAdd.CommonName}");
 					var certdataApi = Task.Run(async () => await client.PickupCertificate(certToAdd.Id, certToAdd.CommonName)).Result;
 					if (certdataApi != null)
 						certData = Convert.ToBase64String(certdataApi.GetRawCertData());
 
+					
 					if (certToAdd == null || String.IsNullOrEmpty(certToAdd.SerialNumber) || String.IsNullOrEmpty(certToAdd.CommonName) || String.IsNullOrEmpty(certData))
 					{
 						_logger.LogDebug($"Certificate Data unavailable for {certToAdd.CommonName} (ID: {certToAdd.Id}). Skipping ");
 						continue;
 					}
+					_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Retrieved cert data: {certData}");
 
 					string prodId = "";
 					try
 					{
-						_logger.LogTrace($"Cert ID: {certToAdd.Id.ToString()}");
-						_logger.LogTrace($"Sync ID: {syncReqId.ToString()}");
-						_logger.LogTrace($"Product ID: {certToAdd.CertType.id.ToString()}");
+						_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Cert ID: {certToAdd.Id.ToString()}");
+						_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Sync ID: {syncReqId.ToString()}");
+						_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Product ID: {certToAdd.CertType.id.ToString()}");
+						_logger.LogTrace($"SYNC TRACE ({certToAdd.Id}): Status: {certToAdd.status}");
 						prodId = certToAdd.CertType.id.ToString();
 					}
 					catch { }
