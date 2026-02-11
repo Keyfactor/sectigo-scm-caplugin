@@ -78,6 +78,10 @@
                 {
                     "name": "Department",
                     "description": "If your Sectigo account is using department-level products, put the appropriate department name here. Previously, this was alternatively supplied in the OU= subject field, which is now deprecated."
+                },
+                {
+                    "name": "Lifetime",
+                    "description": "OPTIONAL: The term length (in days) to use for enrollment. If not provided, the default is the first value available in the profile definition in your Sectigo account."
                 }
             ]
         }

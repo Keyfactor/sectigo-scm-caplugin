@@ -14,3 +14,6 @@ Fix for JSON serialization of revocation
 1.1.0  
 Add support for using the cert upload feature to upload auth certs  
 Switch to .NET 8  
+
+1.1.1  
+Allow for manual specification of enrollment term length  
