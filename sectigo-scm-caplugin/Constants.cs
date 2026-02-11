@@ -27,6 +27,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			public const string MULTIDOMAIN = "MultiDomain";
 			public const string ORGANIZATION = "Organization";
 			public const string DEPARTMENT = "Department";
+			public const string LIFETIME = "Lifetime";
 		}
 
 		//headers for API client
