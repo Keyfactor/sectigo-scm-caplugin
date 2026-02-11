@@ -113,6 +113,7 @@ In addition, for the admin account you plan to use, make sure it has the API adm
     * **MultiDomain** - This flag lets Keyfactor know if the certificate can contain multiple domain names. Depending on the setting, the SAN entries of the request will change to support Sectigo requirements. 
     * **Organization** - If the organization name is provided here, the Sectigo gateway will use that organization name in requests instead of whatever is in the O= field in the request subject. 
     * **Department** - If your Sectigo account is using department-level products, put the appropriate department name here. Previously, this was alternatively supplied in the OU= subject field, which is now deprecated. 
+    * **Lifetime** - OPTIONAL: The term length (in days) to use for enrollment. If not provided, the default is the first value available in the profile definition in your Sectigo account. 
 
 
 
