@@ -196,6 +196,26 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					_logger.LogTrace($"Found {enrollmentProfile.name} profile for enroll request");
 				}
 
+				int termLength;
+				var profileTerms = Task.Run(async () => await GetProfileTerms(int.Parse(productInfo.ProductID))).Result;
+				if (!string.IsNullOrEmpty(productInfo.ProductParameters[Constants.Config.LIFETIME]))
+				{
+					var tempTerm = int.Parse(productInfo.ProductParameters[Constants.Config.LIFETIME]);
+					if (profileTerms.Contains(tempTerm))
+					{
+						termLength = tempTerm;
+					}
+					else
+					{
+						_logger.LogError($"Specified term length of {tempTerm} does not match available terms for product ID {productInfo.ProductID}. Available terms are {string.Join(",", profileTerms)}");
+						throw new Exception($"Specified term length of {tempTerm} does not match available terms for product ID {productInfo.ProductID}");
+					}
+				}
+				else
+				{
+					termLength = profileTerms[0];
+				}
+
 				int sslId;
 				string priorSn = string.Empty;
 				Certificate newCert = null;
@@ -216,7 +236,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						{
 							csr = csr,
 							orgId = requestOrgId,
-							term = Task.Run(async () => await GetProfileTerm(int.Parse(productInfo.ProductID))).Result,
+							term = termLength,
 							certType = enrollmentProfile.id,
 							//External requestor is expected to be an email. Use config to pull the enrollment field or send blank
 							//sectigo will default to the account (API account) making the request.
@@ -428,6 +448,13 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 				[Constants.Config.DEPARTMENT] = new PropertyConfigInfo()
 				{
 					Comments = "If your Sectigo account is using department-level products, put the appropriate department name here. Previously, this was alternatively supplied in the OU= subject field, which is now deprecated.",
+					Hidden = false,
+					DefaultValue = "",
+					Type = "String"
+				},
+				[Constants.Config.LIFETIME] = new PropertyConfigInfo()
+				{
+					Comments = "OPTIONAL: The term length (in days) to use for enrollment. If not provided, the default is the first value available in the profile definition in your Sectigo account.",
 					Hidden = false,
 					DefaultValue = "",
 					Type = "String"
@@ -674,11 +701,11 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			return orgList.Organizations.Where(x => x.name.ToLower().Equals(orgName.ToLower())).FirstOrDefault();
 		}
 
-		private async Task<int> GetProfileTerm(int profileId)
+		private async Task<List<int>> GetProfileTerms(int profileId)
 		{
 			var client = SectigoClient.InitializeClient(_config, _certificateResolver);
 			var profileList = await client.ListSslProfiles();
-			return profileList.SslProfiles.Where(x => x.id == profileId).FirstOrDefault().terms[0];
+			return profileList.SslProfiles.Where(x => x.id == profileId).FirstOrDefault().terms.ToList();
 		}
 
 		private async Task<Profile> GetProfile(int profileId)
