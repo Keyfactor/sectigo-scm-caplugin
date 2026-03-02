@@ -265,7 +265,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 			catch (HttpRequestException httpEx)
 			{
 				_logger.LogError($"Enrollment Failed due to a HTTP error: {httpEx.Message}");
-				throw new Exception(httpEx.Message);
+				throw;
 			}
 			catch (Exception ex)
 			{
@@ -277,7 +277,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 					retError = ex.InnerException.Message;
 				}
 
-				throw new Exception(retError);
+				throw;
 			}
 		}
 
