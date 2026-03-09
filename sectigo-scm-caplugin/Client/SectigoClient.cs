@@ -61,7 +61,10 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 					Logger.LogInformation($"Request Certificates at Position {certIndex} with Page Size {pageSize}");
 					certificatePageToProcess = await PageCertificates(certIndex, pageSize, filter);
 					Logger.LogDebug($"Found {certificatePageToProcess.Count} certificate to process");
-
+					if (certificatePageToProcess.Count == 0)
+					{
+						return;
+					}
 					//Processing Loop will add and retry adding to queue until all certificates have been processed for a page
 					batchCount = 0;
 					blockedCount = 0;
