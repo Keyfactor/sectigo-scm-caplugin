@@ -16,8 +16,6 @@ Add support for using the cert upload feature to upload auth certs
 Switch to .NET 8  
 
 1.1.1  
-Allow for manual specification of enrollment term length  
-
-1.1.2  
+Allow for manual specification of enrollment term length   
 Add Lifetime parameter to allow for manual specification of cert validity  
 Bugfix - Properly handle syncs of 0 records
