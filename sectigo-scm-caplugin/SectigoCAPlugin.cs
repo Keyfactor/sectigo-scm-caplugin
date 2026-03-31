@@ -249,8 +249,6 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 						};
 
 						_logger.LogDebug($"Submit {enrollmentType} request");
-						var jsonReq = JsonConvert.SerializeObject(request, Formatting.Indented);
-						_logger.LogDebug($"Request object: {jsonReq}");
 						sslId = Task.Run(async () => await client.Enroll(request)).Result;
 						newCert = Task.Run(async () => await client.GetCertificate(sslId)).Result;
 						_logger.LogDebug($"Enrolled for Certificate {newCert.CommonName} (ID: {newCert.Id}) | Status: {newCert.status}. Attempt to Pickup Certificate.");
