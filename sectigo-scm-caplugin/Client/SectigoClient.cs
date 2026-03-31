@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+using Org.BouncyCastle.Asn1.Ocsp;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,6 +20,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Error = Keyfactor.Extensions.CAPlugin.Sectigo.API.Error;
 
 namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 {
@@ -34,7 +38,9 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 
 		public async Task<Certificate> GetCertificate(int sslId)
 		{
-			var response = await RestClient.GetAsync($"api/ssl/v1/{sslId}");
+			string url = $"api/ssl/v1/{sslId}";
+			Logger.LogTrace($"API Request: GET {url}");
+			var response = await RestClient.GetAsync(url);
 			return await ProcessResponse<Certificate>(response);
 		}
 
@@ -139,7 +145,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 		public async Task<List<Certificate>> PageCertificates(int position = 0, int size = 25, string filter = "")
 		{
 			string filterQueryString = string.IsNullOrEmpty(filter) ? string.Empty : $"&{filter}";
-			Logger.LogTrace($"API Request: api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
+			Logger.LogTrace($"API Request: GET api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			var response = await RestClient.GetAsync($"api/ssl/v1?position={position}&size={size}{filterQueryString}".TrimEnd());
 			return await ProcessResponse<List<Certificate>>(response);
 		}
@@ -151,23 +157,17 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 				reasonCode = revcode,
 				reason = revreason
 			};
+			Logger.LogTrace($"API Request: POST api/ssl/v1/revoke/{sslId}\nParameters: {JsonConvert.SerializeObject(data, Formatting.Indented)}");
 			var response = await RestClient.PostAsJsonAsync($"api/ssl/v1/revoke/{sslId}", data);
-			if (response.IsSuccessStatusCode)
-			{
-				return true;
-			}
-			var failedResp = ProcessResponse<RevocationResponse>(response).Result;
-			return failedResp.IsSuccess;//Should throw an exception with error message from API
+			var resp = ProcessResponse<RevocationResponse>(response).Result;
+			
+			return true;//Should throw an exception with error message from API, should only hit this if success
 		}
 
 		public async Task<ListOrganizationsResponse> ListOrganizations()
 		{
+			Logger.LogTrace($"API Request: GET api/organization/v1");
 			var response = await RestClient.GetAsync("api/organization/v1");
-			if (response.IsSuccessStatusCode)
-			{
-				string responseContent = await response.Content.ReadAsStringAsync();
-				Logger.LogTrace($"Raw Response: {responseContent}");
-			}
 			var orgsResponse = await ProcessResponse<List<Organization>>(response);
 
 			return new ListOrganizationsResponse { Organizations = orgsResponse };
@@ -175,13 +175,8 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 
 		public async Task<OrganizationDetailsResponse> GetOrganizationDetails(int orgId)
 		{
+			Logger.LogTrace($"API Request: GET api/organization/v1/{orgId}");
 			var response = await RestClient.GetAsync($"api/organization/v1/{orgId}");
-			if (response.IsSuccessStatusCode)
-			{
-				string responseContent = await response.Content.ReadAsStringAsync();
-				Logger.LogTrace($"Raw Response: {responseContent}");
-			}
-
 			var orgDetailsResponse = await ProcessResponse<OrganizationDetailsResponse>(response);
 			return orgDetailsResponse;
 		}
@@ -203,6 +198,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 
 		public async Task<ListCustomFieldsResponse> ListCustomFields()
 		{
+			Logger.LogTrace($"API Request: GET api/ssl/v1/customFields");
 			var response = await RestClient.GetAsync("api/ssl/v1/customFields");
 			return new ListCustomFieldsResponse { CustomFields = await ProcessResponse<List<CustomField>>(response) };
 		}
@@ -214,13 +210,14 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			{
 				urlSuffix = $"?organizationId={orgId}";
 			}
-
+			Logger.LogTrace($"API Request: GET api/ssl/v1/types{urlSuffix}");
 			var response = await RestClient.GetAsync($"api/ssl/v1/types{urlSuffix}");
 			return new ListSslProfilesResponse { SslProfiles = await ProcessResponse<List<Profile>>(response) };
 		}
 
 		public async Task<List<Person>> PagePersons(int orgId, int position = 0, int size = 25)
 		{
+			Logger.LogTrace($"API Request: GET api/person/v1?position={position}&size={size}&organizationId={orgId}");
 			var response = await RestClient.GetAsync($"api/person/v1?position={position}&size={size}&organizationId={orgId}");
 			return await ProcessResponse<List<Person>>(response);
 		}
@@ -229,6 +226,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 		{
 			try
 			{
+				Logger.LogTrace($"API Request: POST api/ssl/v1/enroll\nParameters: {JsonConvert.SerializeObject(request, Formatting.Indented)}");
 				var response = await RestClient.PostAsJsonAsync("api/ssl/v1/enroll", request);
 				var enrollResponse = await ProcessResponse<EnrollResponse>(response);
 
@@ -248,35 +246,14 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			}
 		}
 
-		public async Task<int> Renew(int sslId)
-		{
-			try
-			{
-				var response = await RestClient.PostAsJsonAsync($"api/ssl/v1/renewById/{sslId}", "");
-				var renewResponse = await ProcessResponse<EnrollResponse>(response);
-
-				return renewResponse.sslId;
-			}
-			catch (InvalidOperationException invalidOp)
-			{
-				throw new Exception($"Invalid Operation. {invalidOp.Message}|{invalidOp.StackTrace}");
-			}
-			catch (HttpRequestException httpEx)
-			{
-				throw new Exception($"HttpRequestException. {httpEx.Message}|{httpEx.StackTrace}");
-			}
-			catch (Exception)
-			{
-				throw;
-			}
-		}
-
 		public async Task<X509Certificate2> PickupCertificate(int sslId, string subject)
 		{
+			Logger.LogTrace($"API Request: GET api/ssl/v1/collect/{sslId}/x509C0");
 			var response = await RestClient.GetAsync($"api/ssl/v1/collect/{sslId}/x509CO");
-
+			
 			if (response.IsSuccessStatusCode && response.Content.Headers.ContentLength > 0)
 			{
+				Logger.LogTrace($"Raw response: {response.Content.ReadAsStringAsync()}");
 				string pemChain = await response.Content.ReadAsStringAsync();
 
 				string[] splitChain = pemChain.Replace("\r\n", string.Empty).Split(new string[] { "-----" }, StringSplitOptions.RemoveEmptyEntries);
@@ -287,24 +264,19 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo.Client
 			//return new X509Certificate2();
 		}
 
-		public async Task Reissue(ReissueRequest request, int sslId)
-		{
-			var response = await RestClient.PostAsJsonAsync($"api/ssl/v1/replace/{sslId}", request);
-			response.EnsureSuccessStatusCode();
-		}
-
 		#region Static Methods
 
 		private static async Task<T> ProcessResponse<T>(HttpResponseMessage response)
 		{
+			string responseContent = await response.Content.ReadAsStringAsync();
+			Logger.LogDebug($"Raw API response: {responseContent}");
 			if (response.IsSuccessStatusCode)
 			{
-				string responseContent = await response.Content.ReadAsStringAsync();
 				return JsonConvert.DeserializeObject<T>(responseContent);
 			}
 			else
 			{
-				var error = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+				var error = JsonConvert.DeserializeObject<Error>(responseContent);
 				throw new Exception($"{error.Code} | {error.Description}");
 			}
 		}

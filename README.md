@@ -1,5 +1,5 @@
 <h1 align="center" style="border-bottom: none">
-    Sectigo Certificate Manager   Gateway AnyCA Gateway REST Plugin
+    Sectigo Certificate Manager AnyCA Gateway REST Plugin
 </h1>
 
 <p align="center">
@@ -45,10 +45,10 @@ The Sectigo AnyCA Gateway REST plugin extends the capabilities of the Sectigo Ce
 
 ## Compatibility
 
-The Sectigo Certificate Manager   Gateway AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 24.2.0 and later.
+The Sectigo Certificate Manager AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 24.2.0 and later.
 
 ## Support
-The Sectigo Certificate Manager   Gateway AnyCA Gateway REST plugin is supported by Keyfactor for Keyfactor customers. If you have a support issue, please open a support ticket with your Keyfactor representative. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com. 
+The Sectigo Certificate Manager AnyCA Gateway REST plugin is supported by Keyfactor for Keyfactor customers. If you have a support issue, please open a support ticket with your Keyfactor representative. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com. 
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
@@ -61,7 +61,7 @@ In addition, for the admin account you plan to use, make sure it has the API adm
 
 1. Install the AnyCA Gateway REST per the [official Keyfactor documentation](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/InstallIntroduction.htm).
 
-2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [Sectigo Certificate Manager   Gateway AnyCA Gateway REST plugin](https://github.com/Keyfactor/sectigo-scm-caplugin/releases/latest) from GitHub.
+2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [Sectigo Certificate Manager AnyCA Gateway REST plugin](https://github.com/Keyfactor/sectigo-scm-caplugin/releases/latest) from GitHub.
 
 3. Copy the unzipped directory (usually called `net6.0` or `net8.0`) to the Extensions directory:
 
@@ -72,11 +72,11 @@ In addition, for the admin account you plan to use, make sure it has the API adm
     Program Files\Keyfactor\AnyCA Gateway\AnyGatewayREST\net8.0\Extensions
     ```
 
-    > The directory containing the Sectigo Certificate Manager   Gateway AnyCA Gateway REST plugin DLLs (`net6.0` or `net8.0`) can be named anything, as long as it is unique within the `Extensions` directory.
+    > The directory containing the Sectigo Certificate Manager AnyCA Gateway REST plugin DLLs (`net6.0` or `net8.0`) can be named anything, as long as it is unique within the `Extensions` directory.
 
 4. Restart the AnyCA Gateway REST service.
 
-5. Navigate to the AnyCA Gateway REST portal and verify that the Gateway recognizes the Sectigo Certificate Manager   Gateway plugin by hovering over the ⓘ symbol to the right of the Gateway on the top left of the portal.
+5. Navigate to the AnyCA Gateway REST portal and verify that the Gateway recognizes the Sectigo Certificate Manager plugin by hovering over the ⓘ symbol to the right of the Gateway on the top left of the portal.
 
 ## Configuration
 
