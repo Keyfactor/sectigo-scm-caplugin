@@ -198,7 +198,7 @@ namespace Keyfactor.Extensions.CAPlugin.Sectigo
 
 				int termLength;
 				var profileTerms = Task.Run(async () => await GetProfileTerms(int.Parse(productInfo.ProductID))).Result;
-				if (!string.IsNullOrEmpty(productInfo.ProductParameters[Constants.Config.LIFETIME]))
+				if (productInfo.ProductParameters.ContainsKey(Constants.Config.LIFETIME) && !string.IsNullOrEmpty(productInfo.ProductParameters[Constants.Config.LIFETIME]))
 				{
 					var tempTerm = int.Parse(productInfo.ProductParameters[Constants.Config.LIFETIME]);
 					if (profileTerms.Contains(tempTerm))
