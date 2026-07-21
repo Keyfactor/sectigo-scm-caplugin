@@ -18,4 +18,7 @@ Switch to .NET 8
 1.1.1  
 Allow for manual specification of enrollment term length  
 Add Lifetime parameter to allow for manual specification of cert validity  
-Bugfix - Properly handle syncs of 0 records
+Bugfix - Properly handle syncs of 0 records  
+
+1.1.2  
+Bugfix - Properly check for existance of Lifetime parameter
